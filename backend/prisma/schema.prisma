@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PET_OWNER
+  VET
+  ADMIN
+}
+
+enum PetSpecies {
+  CAT
+  DOG
+  RABBIT
+  BIRD
+  OTHER
+}
+
+enum VisitType {
+  ROUTINE
+  EMERGENCY
+  VACCINE
+  SURGERY
+  CHECKUP
+}
+
+enum VaccineStatus {
+  COMPLETED
+  PENDING
+  OVERDUE
+}
+
+enum InsuranceStatus {
+  ACTIVE
+  PENDING_RENEWAL
+  EXPIRED
+  CLAIMING
+}
+
+enum PolicyType {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  password       String
+  name           String
+  role           UserRole
+  pets           Pet[]           @relation("PetOwner")
+  medicalRecords MedicalRecord[] @relation("VetRecords")
+  vaccines       VaccineRecord[] @relation("VaccineVet")
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Clinic {
+  id             String          @id @default(cuid())
+  name           String
+  address        String
+  phone          String
+  medicalRecords MedicalRecord[]
+}
+
+model Pet {
+  id             String            @id @default(cuid())
+  ownerId        String
+  name           String
+  species        PetSpecies
+  breed          String
+  gender         Gender
+  birthDate      DateTime
+  weight         Float
+  microchipNo    String?
+  avatar         String?
+  allergies      String?
+  medicalHistory String?
+  owner          User              @relation("PetOwner", fields: [ownerId], references: [id])
+  medicalRecords MedicalRecord[]
+  vaccineRecords VaccineRecord[]
+  policies       InsurancePolicy[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model MedicalRecord {
+  id            String    @id @default(cuid())
+  petId         String
+  vetId         String
+  clinicId      String
+  visitDate     DateTime
+  type          VisitType
+  diagnosis     String
+  treatment     String
+  prescription  String
+  cost          Decimal
+  nextVisitDate DateTime?
+  attachments   String[]
+  pet           Pet       @relation(fields: [petId], references: [id])
+  vet           User      @relation("VetRecords", fields: [vetId], references: [id])
+  clinic        Clinic    @relation(fields: [clinicId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model VaccineRecord {
+  id               String        @id @default(cuid())
+  petId            String
+  vaccineName      String
+  batchNo          String
+  administeredDate DateTime?
+  nextDueDate      DateTime
+  vetId            String
+  status           VaccineStatus
+  pet              Pet           @relation(fields: [petId], references: [id])
+  vet              User          @relation("VaccineVet", fields: [vetId], references: [id])
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model InsurancePolicy {
+  id        String          @id @default(cuid())
+  petId     String
+  provider  String
+  planType  PolicyType
+  premium   Decimal
+  coverage  Decimal
+  startDate DateTime
+  endDate   DateTime
+  status    InsuranceStatus
+  pet       Pet             @relation(fields: [petId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  content   String
+  type      String
+  read      Boolean   @default(false)
+  user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  path        String
+  method      String
+  bodySummary String
+  statusCode  Int
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id])
+}
