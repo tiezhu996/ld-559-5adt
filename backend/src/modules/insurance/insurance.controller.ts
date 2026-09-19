@@ -22,8 +22,8 @@ export class InsuranceController {
 
   @Patch(':id/claim')
   @AuditLog('提交理赔')
-  async claim(@Param('id') id: string) {
-    return { code: 0, message: 'ok', data: await this.service.claim(id) };
+  async claim(@Req() req: any, @Param('id') id: string) {
+    return { code: 0, message: 'ok', data: await this.service.claim(req.user, id) };
   }
 
   @Patch(':id')
